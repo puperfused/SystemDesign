@@ -6,6 +6,8 @@
 - To make a request to the server for the data, client first needs to establish a connection (by handshaking). A connection is opened and server do some processing and returns the response to the client on the same opened connection, and then closes the connection. 
 - Example: Fetching profile information on facebook.
 
+
+
 ## **HTTP Polling**
 ---
 - The client can make a request to the server for the data using the http request, and keeps on knocking the door of the server at regular interval (say after every 3 sec) for a response. The server will only return useful response once its processing is completed otherwise it will keep sending empty responses at the time of knock.
