@@ -1,0 +1,228 @@
+System Design
+---------------------------------
+Scalability
+------------
+Instead of deploying our application or service on local systems, or VMs on Desktop or appliances, how we can scale this application and deploy it on servers on the internet indeed multiple servers on the internet.
+So that we can handle hundreds or thousand or even much more in numbers of request. So how can we do achieve this. To deploy or host any application or service we need a web hosting service or or domain where we can
+deploy our application.
+
+
+Web Host
+--------------
+There are various Web Hosting Services available like bluehost, dreamhost, godaddy etc. But the takeaway is what kind of features are you looking for or expect in any web hosting company that you choose.
+It can depend on various factors, like blocking a set of IPs like youtube, facebook etc. then u choose lets say godaddy, you want your communication  or data to be encrypted(using SFTP, etc.),
+encrypted user credentials unlike FTP, some web hosts provide unlimited storage space, unlimited ram, and other resources but thats not possibly real for the price they ask. So the catch is they provide 
+shared hosting to hundreds or thousand of customer that might be on the same machine so anyone with high requirement may struggle with the given resources to run his/her business. So there are other alternatives 
+available in such cases. They are knowns VPSes(Virtual Private Servers) like dreamhost, godaddy, hostgater, Amazon AWS EC2 (Elastic Computing Cloud), etc.
+
+
+VPSes (Virtual Private Servers) 
+---------------------------------
+So we can rent these servers for ourselves for our own usage. So basically its a machine  or super-fast server with huge resources in numbers, like huge RAM, large number of CPUs, and other computing resources. 
+So they chop it up into smaller machines or illusion of multiple servers using hypervisor (like Vmware, Virtual box, citrix etc.) Its basically running of multiple Virtual machine on single physical machine. 
+Here also we are using shared resources but the type is different because here you will be getting a slice of hardware on which no other customer or user has access to, only you own that machine. But the admin
+of the physical machine has access to all of the running machines. Your data might be more secured from other customers but not the owning company which owns that VPS. So if want to avoid that you will have to 
+use your own servers where you and your colleagues has physical access to that server. 
+In order to get these additional features or properties in a VPS we generally need to pay more in terms of resources. Amazon Web Services Amazon EC2 (Elastic Computing Cloud) lets you self service and spawn 
+as many servers as you want. The good part is we can automate the process of scaling the number of servers. Lets say your websites popularity increases overnight, then it can spawn more web server or more database
+servers to keep it up and running and automatically turns it off if it subsides. But again we will have to pay more for these services like per/minute basis , per/hour etc.
+
+
+How do we go scaling up the system to handle more user ??
+--------------------------------------------------------------
+Lets say your websites becomes super popular all of sudden, how you are going to manage the increase in request(from linear to lets say exponential). Consider your website has some static content like HTML, gifs
+some dynamic content like PHP code, some database stuff like MYSQL. So how do we go scaling up the system and handle more user request ? There are various methods or techniques we can use. Lets see them piece 
+by piece. One of the way is to do Vertical Scaling.
+
+
+Vertical Scaling
+------------------
+So lets say due to increase in number of request on your site, the CPU cycle has started to exhaust to its maximum limit, we are running low on RAM, and also low on disk space. Very straightforward solution
+to this problem we end up increasing the size of the resources (this is Vertical Scaling). So we increase the size of the RAM, increase the CPU Cores (say from dual core to quad core), increase the disk space
+by throwing out the money.
+But this solution has limitations or real world constraints like we can end up increasing the size to a extent that we exhaust or reach the limit of the best machine made so far. Increasing RAM, CPUs, and 
+other resources improves performance, like if single core is handling single request at a time, quad core will handle four request in parallel or even more but there is downside to it as we discussed.
+CPU - cores, L2 Cache, etc
+Disk - PATA, SATA(hard drives in laptops and desktop, runs at 7200 rpm), SAS(Mechanical Dirve, Serial attached scuzzy, spins at 15000 rpm, so more faster), etc
+RAM,
+...
+If you are using database that is write heavy or read heavy , the case where we are touching the disk a whole lot, we can use SAS disk to speed up the task or performance.
+There are even faster things than Mechanical drives theses days and they are SSDs(Solid state drive, which has no moving parts, and electricallly perfrom much better than Mechanical drive). But they 
+are really expensive, like buying 4TB of SATA is equivalent buying 768GB of SSD with even more price.
+So to solve the limitations of Vertical Scaling we can go with Horizontal Scaling. Lets have a look at Horizontal Scaling
+
+
+Horizontal Scaling
+--------------------
+Instead of throwing money on one single machine and scaling it up and hitting up the cieling or state of the art (best machine so far), we can buy multiple smaller and cheaper machines to solve 
+our problem. This is Horizontal Scaling. So Horizontal scaling accepts the fact that their is gonna a cieling eventually so why dont we architect our system in such a way that we are not gonna hit that cieling
+rather we can stay below it by using bunch of cheaper hardware. So now you have bunch of server instead of just one. 
+
+Now comes another problem, given this architecture where we have number of servers scaled horizontally, how we are going to distribute the request over the servers or more precisely
+how the response will be sent back to the client. So the picture is, client types in some website(lets say your site)
+in the address bar making a request, which in turn goes to DNS to find the details for that site and return the IP (or your webserver) the request goes to your webserver. Now where you will route this request 
+since you have multiple servers allocated ?? So what we can do is keep black box between the client and your list of servers which will decide where to route the request. There can be various criteria or 
+factors based on which the black box decide where to send the request for processing. We call this black box LOAD BALANCER(LB). We can program this criteria or factors in LOAD BALANCER(LB) for decision making,
+and LB decides which server to send the request. One of the criteria can be , how busy the servers are, meaning we will send the request to least busy server to release load from most busy server. 
+
+But this doesnt seems to be good approach because finding which server is busy adds additional complexity like communication between different nodes amongst the server. So another approach can be , whenever a 
+request comes LB first sends the request to first server , then another request to second server, similarly third , till nth server and then back to first server, following Round Robin Approach. 
+This approach is followed by popular DNS Server BIND (Berkley Internet Name Daemon). Each time a request comes DNS gives a different IP of the server following the round robin approach.
+But again there is a downside to this approach also. Lets say a request comes which needs heavy computation and we assign it to some server K, following round robin approach, if we again comeback to
+Kth server after 1/N th move, and found that Kth server is still processing the previous request but still we assigned another heavy task to it, so it might result in poor performance issues. This can 
+happen with all the servers present in the scale(horizontal scale). This is still not a very good solution. 
+
+To optimize availablity of IPv4 what we can do is, we can broadcast the IP of LB instead of individual web server, and maintain webservers internally using private IP and giving public IP to the LB.
+So the encryption and decryption task becomes the headache for LB not for webserver hence reducing some workload 
+from servers. So each time a DNS a queried it will return a different IP, but DNS is not queried at all, because when the first request comes, DNS caches the responses with some TTL and storing the metadata
+, the TTL (time to live) can be few seconds, few minutes or even year totally depends on the implementation. So caching too can contribute to disproportionate amount of load on certain servers due to some
+bad luck maybe. Our web browsers can cache the response, our operating system can cache these response so next time if a user comes with heck of a work, it is sent to different server (say server 2), not on 
+the same server(say server 1) with subsequent request. Once the TTL expires , you may be assigned to different server.
+But it doesnt necessarily solves all of our problems, so instead of using DNS based round robin we can use more sophisticated approach which allows LB to decide to whom to sent the request in the backend. 
+And the LB can make that decision using any number of heuristics or rules, it can be round robin, randomness or anything becuase at that we dont have to worry about caching issues because the DNS server
+has returned only one IP and that is of LB, but that still might result to putting load on some server but we can take that into account while deciding the heuristics.
+
+Now there is something else that breaks, lets talk about cookies , HTTP , sessions(PHP). What if the PHP sessions breaks. So now lets assume a user(say Bob) comes with a login request and LB sends it to server 1
+and somehow the session breaks,
+next time he comes LB sends it to server 2 but there he founds out that its asking him to login again because the cookies are not present on server 2 for him. Lets say he logins again on server 2, 
+thinking he is having just a bad day. The same scenario arises for all the remaning N servers. Lets assume Bob logins in all of the server , so he has cookies in all servers. So next time he doesnt needs
+to login. But!! another problem arises here. Lets say Bob was on some e-commerce site adding books in his cart, so in different servers he must have added different books, but when he checkout for payment ,
+the aggregate is not present rather it shows the cart details for current logged in or routed server.
+
+This is because each server has its own sessions different from each other resulting in discrepancies
+while checkout. So how do we solve this new problem ? Bob breaks his laptop and buys all the book from different shops. Lets help Bob. What we can do here we can dedicate the servers by its type, like
+server 1 is PHP server, server 2 is gifs, htmls etc. similarly for others. But the problem will again be what if your site becomes popular, then load on PHP server will increase again which will be
+complex to handle. If the sessions are implemented per server then we cant really use round robin, randomness etc approach since the user needs to be on the same server with that session for a particular or
+useful amount of time.
+So to solve this problem we can do further factorization and add a component say session store which might be a huge hard drive that is connected to all of the internal servers, so anytime
+they store session data they store it on their own hard drive instead of storing or using internal servers hard drive. This way we can share state and maintain sessions. One could say "why cant we do this inside 
+the LB. I mean LB is already all sorts of factorization let this problem also be handled by LB". But the problem that could arise is what if the LB breaks or that session store dies(like power goes off), 
+all the stored sessions will be lost although we have proper redundancy in our server model. So here we have solved the problem of shared state but now we have sacrificed some robustness some redundancy.
+So how to fix this. So we could use sort of different approach to storing our data and rather than storing it on hard drives we could use something called RAID.
+
+RAID (Redundant Array of Independent Disk)
+--------------------------------------------
+Most of the desktop computers these days comes with RAID even though its not that common. Companies like Dell and Apple make it realtively easy to use RAID on your system. Well RAID comes in few different 
+forms like RAID 0, RAID 1, RAID 5, RAID 6, RAID 10 and many more. We will discuss few of them. So all of these variants of RAIDs assume that you have multiple variants of hard drives for different purposes 
+potentially. So in the world of RAID 0 , you typically have two hard drives of identical size (1TB, 3TB whatever) and we stripe data across them meaning while writing data or streams of bits OS will first write
+to first hard drive then switch to second, then first again and then second again , and loops in this manner, the motivation being these hard drive are typically large and Mechanical with spinning platter
+it might take some time for first drive to write some bits of data(although its split second in reality, but we have lots of request to handle ) so we write remaining data to other drive when first is busy
+writing effectively doubling the speed at which i can write file, So RAID 0 is nice for performance. On the other hand RAID 1 also have 2 hard drives(not necessarily identical in size) but here the case is different,
+here we mirror data across them.
+
+So anytime you write a file , you write at both places simlutaneously, there is performance downside to it since we are writing redudant data but the upside either of the drive 
+can die and we still have the data as long as remaining one is up and running, meanwhile you can go to the shop buy one hard drive and replace with dead drive and reboot and RAID will automatically rebuild 
+every bit of the alive drive to the new drive or it copies the content automatically. Sometimes we can do this with some commands, some menu options but mostly automatically, and sometimes while the system 
+is on or during downtime. RAID 10 is the combination of both RAID0 and RAID1, you typically have 4 drive and we can do both striping and redundancy as well but again its pricey. RAID 5 is kind of more versatile
+where we can 3 or 4 or 5 drives but only one of them can be used for redundancy.
+
+So if i get five 1 TB of drives, we will be having 4 TB of usable space and 1 TB for redundancy, sacrficing 1/5th of disk 
+capacity where as in RAID 1 we were sacrificed 1/2 (half). So if we have 3 or 4 or 5 drives and one of them or any of them dies we can buy a new drive and put it in, the new one and we haven't lost any data.
+RAID 6 is even better , here any of the 2 drives can die and you still haven't lost any data as long as you put one or 2 drive in place of the died one. But we have to pay more price here as we are getting
+more drives in action but at least we can sleep at night better thinking at least 2 of my hard drives has to die before i really need to worry about it. So its really nice technology. So the upside
+of using something like this in whatever file server we are storing our shared sessions is we can at least decrease the probablity of downtime at least related to hard disks unfortuantely it still has 
+power cord which someone can trip over, or the power supply dies, or the motherboard can die any number of things can happen but at least we can throw some redundancy inside the confines of the single
+server and it can help with our uptime and robustness. Indeed with actual server you would buy for a data center its very common for the computer to have not only multiple hard drive, multiple banks of 
+RAM, and they would often have multiple power supplies and its really cool technology, if one of your power supplies dies, you can literally pull it out the machine keeps running you put in a new one
+and then it spreads amperage across two power supplies once both are back up and running. So using RAID avoid data loss and downtime with higher probablity. 
+
+Now lets say someone comes up trips over all the power supply , so the above solution hasnt solved the problem of shared storage becoming all of a sudden single point of failure. 
+So what can we do now ? Well shared storage can come in bunch of different ways , we have seen about things as file server but this can be incarnated with very specific technologies.
+Like Fibre Channel (FC) is very fast and expensive technology that can be used in offices and data centers to provide very fast shared storage across server, so thats one type of file server.
+iSCSI is another technology that uses IP and ethernet cable to exchange data with servers and thats a cheaper way of exchanging and having shared file server (it is for single server not multiple server, 
+so it doesnt solve our current cookie problem).
+MYSQL seems to be the potential candidate because its already a seprate server, why couldn't these backend server just write their session objects to a 
+database, they definitely could, so we can store metadata info like cookie in servers like MYSQL database. NFS (Network file system) is just a protocol that we can use to implement our idea that we
+proposed in our above discussion of shared file system , it just means we got one server and we our exposing our hard disk to multiple other computers or machines. But actually we havent solved our 
+problem of share of downtime, so whats the most obvious way to mitigating the risk, that your single file server will go down. Well the obvious solution with some technical complexity is instead of having
+just one file server which might go down or fail why cant we have two file server and somehow we will have to figure out how both will sync and one will have copy of others data and vice-versa, this is
+generally known as REPLICATION. Before we move to REPLICATION, lets jump to how we can implement that black box or LOAD BALANCER. 
+
+LOAD BALANCER   
+---------------
+These days there are various options available. In softwares we can do things realtively easily with browser by just pointing and clicking using things like Amazon ELB(Elastic Load Balancer), HAProxy 
+(High Availability Proxy) is a free open source software that you can run on a server using either of the heuristics we discussed earlier like Round-Robin, randomness, or load into account, LVS (Linux
+Virtual Server) is another free software.
+In the world of hardware people have made big business out of LOAD BALANCER. Barracuda, CISCO, Citrix, F5 are some of the popular vendors. A Load Balancer can cost very much, like very small ones 
+can cost 20 thousand Dollars and that one is cheap. 
+If you want to use , you can go with HAProxy as it is free and easy to setup. 
+
+Lets discuss one other solution to the problem of the "Need for the sticky sessions"? Sticky session means , when you visit a website multiple times your session is somehow is preserved even if there are
+multiple backend servers. Shared storage idea we discussed a lot about but we dint quite reach to a perfect solution since even though we factored out the storage and put everyones cookies or session 
+objects on the same server(file server), it feels like we still need some redundancy. We will come back to that in the context of MYSQL. But what about cookies ?? Well can we say that cookies can solve
+our problem of sticky session. Storing everything in a cookie is obviously a bad idea as it violates the privacy, because with the keys and credentials you are pushing in some not so useful data like
+shopping cart items, and also there is fixed size to the cookies mostly in KBs. So what we can do is we can add or keep ServerIDs in the cookies. So if the next time Bob commes with a request, 
+the cookie says hey i was on this serverID, send me on this server, and then we can map it to that particular session object. There is actually one downside of this idea of storing serverID in the cookie.
+Eventually the cookie is gonna expire but we have cases where it expires in say 1o years. So we are not too worried about expiration now. So what else is the problem ? It might happen that during the process
+the backend server IP got changed but it is not reflected in the cookie, so that could lead to the problem. And also its not a good practice to reveal your IP address scheme is, the whole world dont need to know
+this(maintaining privacy). Instead why dont we ask load balancer to assign some random big number X that belongs to server1 , some number Y belongs to server2, this way we can solve our problem and take away the 
+ability of using the cookie to spoof on another servers. You can configure the load balancers to insert the cookie themselves it doesnt just have to be backend web server that generates cookies, the load balancer
+can similarly could be inserting a cookie with setCookie Header that the end user subsequently sends back so that we can remember what backend server to send the user to. Well if the user has cookies disabled
+all of the functionality breaks down so does the system, but there are always some workaround.
+
+CACHING
+----------
+Caching is a great thing, it solves some of our DNS concerns early on but it introduced others because caching can be a bad thing if some value has changed but still we are working with old values or
+unchanged values. But caching can be implemented in the context of dynamic websites in a few different ways like it can be done by .html, through MYSQL Query Cache, Memcached, etc. Like famous website
+Craigslist, uses static content .html pages which can be cached and its relativity faster in performance, but there is downside since for one change like in font, background color, we will have to 
+do the changes in all of the files, and also it needs lot of space to store these html file. This is file based caching. There are very few people who use this approach, but if we go by statistics
+they get by very less hardware. 
+MYSQL Query Cache is a mechanism that can be easily enabled on typical server with MYSQL, there is a file called my.cnf for your configuration file and you can add a 
+directive like ' query_cache_type = 1 ' and then restart the server to enable the query cache which pretty much does what it says. So lets say if query "select foo from bar where baz='Bob' ", so the first
+time it might take sometime to give the result for the query (also more if indexing is not there), but if you come second time with the same query and query_cache is on and the data hasn't change then
+it will give the result very quickly. So MYSQL provides of this kind of caching for identically executed queries which might happen certainly a lot if user is navigating your website going forward and backward.
+
+Memcached is even more powerful mechanism, facebook has used this very much initially. Memcached is memory cache. So it is piece of a software, a server running on a server, it can be on the server as your
+webserver, it can be a  on totally different box but essentially it stores whatever you want in RAM. Memcached can be used by all sorts of languages. We first connect to the server (using memcache_connect in PHP)
+then we do the operations, like getting a user. Its pretty expensive to query for "select this_user from user" from sql database, rather we can query it once, and save it in RAM, so next we need that
+user we can ask for the user from cache rather than touching the database. Lets say we queried from cache like memcache_get(memcache, userID), if the result is null, it means there is no user with that userID
+in cache, then we connect to our database (like in MYSQL), then we query for that userID from database, now before doing anything with the queried result what we will do is we will store that user details 
+as key value pair in cache (memcache_set(memcache, userID, userDetails)).
+
+So next time we lookup this userDetails it will be much faster. So now caches are finites, because RAMs are finite or disk space is finite,
+so eventually the cache can get so big that you cant keep it on a machine, so what would be the reasonable thing to do at that point when you run out of your RAM or disk space for your cache ?
+So there are various cache invalidation startagies, like we can expire objects in the cache depending on the timestamp of their entry or if they are not being used since long, lets say user 1, 2, 3 are not being 
+used for 3 or 4 days and we want to insert user 4 , 5 , 6 we can go ahead and remove and 1,2,3 users and add 4,5,6, so the first one to get in is the first one to get out if the timestamp or details for 
+that particular user are not getting used or but by contrast if there are cache hit, we will keep updating the timestamp or details for that user as if they are power user, and their can be different 
+function to push these records to the front of the cache. Infact all of these are done by Memcached automatically , we dont need to worry about it.
+
+
+Consider facebook, earlier it was more read heavy as compared to current scenario where it is both read and write heavy. But mostly its read heavy, as we go around seeing each other status, post and feeds.
+But these days there are definitely more writes, but when you login, it loads up or reads lots of data, like about your profile, friends post, etc. where as write is less in number during that time making it
+read heavy, so it makes caches more compelling because if your own profile is not changing very often at least you might get 10 page views, or 100 page views then you are updating your feeds so thats an
+oppurtunity for optimization, early days they were using Memcache to generate your profile instead of lookup in database.
+
+MYSQL optimization
+-------------------
+To squeeze more performance out of our setup lets discuss about different MYSQL storage engine that comes with package. Storage engines are MyISAM, Memory, InnoDB, Archive, NDB. Storage engine is 
+nothing but its like underlying format that was to store your database data. InnoDB supports transaction, while MyISAM does not , MyISAM uses locks which are full table locks but it tends have some other
+properties also. Memory engine or heap engine, this is the table thats intentionally only stored in RAM , but if the power goes off everything in the memory goes off. Archive Data Engine, they are slower 
+to query but they are automatically compressed for you so that they take much much less space , so common usecase be in storing log files, lets say you want to store the logs of user logins, someone buys
+something, etc, in key value format, you keep it for diagnostic purpose, some research purpose, etc, but you are ok to sacrifice on perfomance in future over space. NDB is network storage engine which is 
+used for clustering so there is a way of addressing single point of failure that we discussed earlier with shared storage but we will see simpler approach later.
+
+REPLICATION
+----------------
+In the world of databases like MYSQL, they typically offer this replication feature. REPLICATION is all about making automatic copies of something. And the terminology is generally goes as follows,
+you generally have Master Database which is where we read data from, and write data to, but just for good measure, that master have one or more slave databases attached to it via network connection and their
+purpose is to get a copy of every single row that is present in master, you can think of this as, everytime a query is executed on a master, the same query is copied on all the slave nodes making it
+identical to master. So this solves the problem that if our master goes down we have at least 3 to 4 remaining nodes with same content, and we can serve the user from those nodes untill master serves 
+the downtime. 
+
+A bit of reconfiguration is needed to promote slave to master, but this method can be automated completely by writing a script. How else could we take advantage of this topology, or in context
+of facebook, how did they made good use of this topology ??  or why this topology is good for read heavy site and less write heavy. So for read heavy websites like facebook in the early days, we could 
+write our code in such a way that any select statement or read is done from lets say node 2, 3, 4 (slave nodes dedicated for read operations), and any write operation will go to node 1 (master node ,
+dedicated for writing) which in turn propogates the changes to the all the slave or read nodes. So this approach of having slaves can typically be used either for redundancy or so that you can balance
+read request across them is a very nice solution. 
+
+But offcourse, everytime we solve one problem we introduced another, or we havent fixed another, so now whats the fault here ? What if one dies ? 
+Then we have to promote a slave to master , so still we have a single point of failure at least for writes. We can keep facebook alive, by letting people browse profiles, post, but not letting
+them post anything as long as it takes time to promote a slave to master. Feels like it'd be nicer at least probablity would be better of uptime if we instead have not just a single master rather having 
+a master-master setup. Whereby (lets assume Master 1 and Master 2 ), so we could write either to master 1 or master 2, and if write it on master 1, that query gets replicated on master 2, and vice-versa.
+
+Or you can keep it simple, you could always write to 1, and the query goes to 2 automatically, or writing to both load balancing across the two, and they will propogate between each other. So in this
+case either master 1 or master 2 can go down, and still you have a master to serve the request.
+So we can unite this idea with load balancer and come up with a better solution. (Need image to explain) 
+
+LOAD BALANCING + REPLICATION
+---------------------------------
